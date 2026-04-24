@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=360,initial-scale=1" />
+  <title>System</title>
+  <style>
+    :root {
+      --bg: #0d0e18;
+      --bg-2: #151728;
+      --edge: #262a42;
+      --text: #edeef8;
+      --text-dim: #7c82a0;
+      --ram: #4cd7ff;
+      --ram-warm: #ffd166;
+      --ram-hot: #ff5c7a;
+      --disk: #c8a6ff;
+      --cpu: #7bffbe;
+      --danger: #ff5c7a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      font-family: -apple-system, "SF Pro Display", sans-serif;
+      font-feature-settings: "tnum" 1;
+      -webkit-font-smoothing: antialiased;
+      user-select: none; -webkit-user-select: none;
+    }
+    html { height: 100%; }
+    body {
+      min-height: 100%;
+      padding: 14px 14px 20px;
+      overflow-y: auto;           /* scroll when settings drawer expands */
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background:
+        radial-gradient(500px 300px at 0% 0%,   #1a1f3a55, transparent 70%),
+        radial-gradient(500px 300px at 100% 100%, #2a1d4655, transparent 70%),
+        var(--bg);
+      transition: background 0.8s, filter 0.4s;
+    }
+    /* Hide the chunky WebKit scrollbar but keep functionality — native scroll still works */
+    body::-webkit-scrollbar { width: 6px; }
+    body::-webkit-scrollbar-thumb { background: var(--edge); border-radius: 3px; }
+    body::-webkit-scrollbar-track { background: transparent; }
+    /* Let text inputs be selectable even though the rest of the popover blocks selection */
+    input, select { user-select: text; -webkit-user-select: text; }
+    /* ── MELTDOWN MODE: triggered when RAM ≥ 95% ────────── */
+    body.meltdown {
+      background:
+        radial-gradient(500px 300px at 0% 0%,   #4d003355, transparent 70%),
+        radial-gradient(500px 300px at 100% 100%, #5d002255, transparent 70%),
+        #14070a;
+      animation: meltdown-shake 0.08s infinite;
+    }
+    body.meltdown::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(600px 400px at center, transparent 60%, #ff000030 100%);
+      mix-blend-mode: screen;
+      animation: meltdown-flash 1.2s infinite;
+      z-index: 200;
+    }
+    @keyframes meltdown-shake {
+      0%, 100% { transform: translate(0, 0); }
+      25%      { transform: translate(-1px,  0.5px); }
+      50%      { transform: translate(0.5px, -1px); }
+      75%      { transform: translate(-0.5px, -0.5px); }
+    }
+    @keyframes meltdown-flash {
+      0%, 100% { opacity: 0.3; }
+      50%      { opacity: 0.6; }
+    }
+    body.meltdown .ram-free {
+      animation: glitch 0.5s infinite;
+    }
+    @keyframes glitch {
+      0%, 100% { text-shadow:
+        0 0 24px var(--ram-hot)80,
+        2px 0 #00e1ff, -2px 0 #ff0073; }
+      50%      { text-shadow:
+        0 0 24px var(--ram-hot)80,
+        -2px 0 #00e1ff, 2px 0 #ff0073; }
+    }
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .brand {
+      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--text-dim); font-weight: 700;
+    }
+    .brand b { color: var(--text); }
+    .icon-btn {
+      background: transparent; border: none; color: var(--text-dim);
+      cursor: pointer; font-size: 14px; padding: 2px 6px;
+      transition: color 0.15s;
+    }
+    .icon-btn:hover { color: var(--text); }
+    .live-dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ram); margin-right: 5px;
+      box-shadow: 0 0 8px var(--ram);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50%      { opacity: 1;   transform: scale(1.25); }
+    }
+
+    /* ── RAM hero card ─────────────────────── */
+    .ram-card {
+      background: linear-gradient(180deg, var(--bg-2) 0%, #101224 100%);
+      border: 1px solid var(--edge);
+      border-radius: 16px;
+      padding: 14px 16px 16px;
+      position: relative; overflow: hidden;
+      --accent: var(--ram);
+    }
+    body.meltdown .ram-card {
+      border-color: var(--ram-hot);
+      box-shadow: 0 0 20px var(--ram-hot)40;
+    }
+    .ram-card::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(300px 180px at 0% 0%, var(--accent)22, transparent 70%);
+    }
+    .ram-label {
+      font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text-dim); font-weight: 700;
+    }
+    .ram-free {
+      font-size: 34px; font-weight: 700; letter-spacing: -0.02em;
+      color: var(--accent); line-height: 1.1;
+      text-shadow: 0 0 24px var(--accent)40;
+      margin-top: 2px;
+    }
+    .ram-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .bar {
+      margin-top: 10px; height: 6px;
+      background: #0a0c18; border-radius: 999px; overflow: hidden;
+      position: relative;
+    }
+    .fill {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      background: var(--accent); border-radius: 999px;
+      transition: width .5s cubic-bezier(.4,1.3,.5,1), background .3s;
+      box-shadow: 0 0 12px var(--accent)80;
+    }
+    .ram-meta {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--text-dim); margin-top: 8px;
+    }
+    .pressure {
+      display: inline-flex; align-items: center;
+      font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+      font-weight: 700; padding: 2px 7px; border-radius: 999px;
+      background: var(--accent)18; color: var(--accent);
+    }
+
+    /* ── Panic button (only visible in meltdown) ── */
+    .panic-wrap { display: none; margin-top: 10px; }
+    body.meltdown .panic-wrap { display: block; }
+    .panic-btn {
+      width: 100%; padding: 16px;
+      background: linear-gradient(180deg, #ff3060 0%, #cc2040 100%);
+      border: 1px solid var(--ram-hot);
+      color: white;
+      border-radius: 12px;
+      font-weight: 800; font-size: 13px; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer;
+      box-shadow: 0 0 30px var(--ram-hot)60;
+      animation: panic-throb 1.2s infinite;
+      transition: transform 0.1s;
+    }
+    .panic-btn:hover { transform: translateY(-1px); }
+    .panic-btn:active { transform: scale(0.97); }
+    @keyframes panic-throb {
+      0%, 100% { box-shadow: 0 0 20px var(--ram-hot)60; }
+      50%      { box-shadow: 0 0 40px var(--ram-hot)99; }
+    }
+    .meltdown-quote {
+      font-size: 11px; color: var(--ram-hot); text-align: center;
+      margin-top: 8px; font-style: italic;
+      min-height: 16px;
+    }
+
+    /* ── Mini stats row ─────────────────────── */
+    .mini-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-top: 10px;
+    }
+    .mini {
+      background: var(--bg-2); border: 1px solid var(--edge);
+      border-radius: 12px; padding: 10px 12px;
+    }
+    .mini .k {
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); font-weight: 700;
+    }
+    .mini .v { font-size: 15px; font-weight: 600; margin-top: 3px; letter-spacing: -0.01em; }
+
+    /* ── Process list ───────────────────────── */
+    .procs {
+      margin-top: 12px;
+      background: var(--bg-2); border: 1px solid var(--edge);
+      border-radius: 14px; padding: 10px 8px 8px 12px;
+    }
+    .procs-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .procs-header .k {
+      font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text-dim); font-weight: 700;
+    }
+    .proc-list {
+      max-height: 170px; overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--edge) transparent;
+    }
+    .proc-list::-webkit-scrollbar { width: 6px; }
+    .proc-list::-webkit-scrollbar-thumb { background: var(--edge); border-radius: 3px; }
+
+    .proc {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 4px; border-radius: 6px;
+      transition: background 0.1s;
+    }
+    .proc:hover { background: #ffffff06; }
+    .proc .name {
+      flex: 1; min-width: 0;
+      font-size: 12px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .proc .name.warn { color: var(--ram-warm); }
+    .proc .name.hot  { color: var(--ram-hot); }
+    .proc .rss {
+      font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums;
+      min-width: 58px; text-align: right;
+    }
+    .proc .kill {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--edge);
+      border-radius: 6px; padding: 2px 8px;
+      font: inherit; font-size: 10px; cursor: pointer;
+      transition: all 0.1s;
+    }
+    .proc .kill:hover { color: var(--danger); border-color: var(--danger); }
+    .proc .kill:active { transform: scale(0.96); }
+    .proc .kill.protected { opacity: 0.4; pointer-events: none; }
+
+    /* ── Settings drawer ───────────────────── */
+    .settings {
+      display: none; margin-top: 10px;
+      background: var(--bg-2); border: 1px solid var(--edge);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .settings.open { display: block; }
+    .settings .k {
+      font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text-dim); font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; padding: 5px 0;
+    }
+    .toggle {
+      position: relative; width: 34px; height: 20px; border-radius: 10px;
+      background: var(--edge); cursor: pointer; transition: background 0.2s;
+    }
+    .toggle::after {
+      content: ""; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: white; transition: left 0.2s;
+    }
+    .toggle.on { background: var(--cpu); }
+    .toggle.on::after { left: 16px; }
+    .voice-select {
+      background: var(--bg); border: 1px solid var(--edge);
+      color: var(--text); border-radius: 6px;
+      padding: 4px 8px; font: inherit; font-size: 12px;
+    }
+
+    /* ── Character cast grid (replaces the voice dropdown) ── */
+    .cast-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .cast-card {
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--edge);
+      border-radius: 10px;
+      padding: 10px 8px 9px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.15s, background 0.15s, box-shadow 0.2s;
+      user-select: none; -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .cast-card:hover {
+      border-color: var(--text-dim);
+      transform: translateY(-1px);
+      background: #1a1d30;
+    }
+    .cast-card:active { transform: translateY(0) scale(0.97); }
+    .cast-card.selected {
+      border-color: var(--cpu);
+      background: linear-gradient(180deg, #1a2028 0%, var(--bg) 100%);
+      box-shadow: 0 0 14px #7bffbe30, inset 0 0 0 1px #7bffbe20;
+    }
+    .cast-card.selected::before {
+      content: "✓";
+      position: absolute; top: 3px; right: 7px;
+      font-size: 10px; font-weight: 700;
+      color: var(--cpu);
+    }
+    .cast-card.speaking {
+      animation: card-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes card-pulse {
+      0%, 100% { box-shadow: 0 0 14px #7bffbe30, inset 0 0 0 1px #7bffbe20; }
+      50%      { box-shadow: 0 0 22px #7bffbe80, inset 0 0 0 1px #7bffbe60; }
+    }
+    .cast-emoji {
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 5px;
+      filter: drop-shadow(0 2px 4px #00000060);
+    }
+    .cast-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+      letter-spacing: 0.02em;
+    }
+    .cast-card.selected .cast-name { color: var(--cpu); }
+    .cast-desc {
+      font-size: 9px;
+      color: var(--text-dim);
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Actions ─────────────────────────────── */
+    .actions { display: flex; gap: 6px; margin-top: 10px; }
+    .actions button {
+      flex: 1;
+      background: var(--bg-2); border: 1px solid var(--edge);
+      color: var(--text); border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit; font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: all 0.1s;
+    }
+    .actions button:hover { background: #ffffff0a; border-color: #3a3f5c; }
+    .actions button.primary {
+      background: linear-gradient(180deg, #2a3a5a 0%, #1d2840 100%);
+      border-color: #3d4a6e;
+    }
+
+    .toast {
+      position: fixed; bottom: 10px; left: 14px; right: 14px;
+      background: #1a1d30; border: 1px solid var(--edge);
+      border-radius: 10px; padding: 8px 12px;
+      font-size: 11px; color: var(--text);
+      box-shadow: 0 8px 20px #00000060;
+      opacity: 0; transform: translateY(8px);
+      transition: all 0.2s; pointer-events: none;
+      z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.err  { border-color: var(--danger); color: var(--danger); }
+    .toast.win  { border-color: var(--cpu); color: var(--cpu); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="brand"><b>◆ SYSTEM</b> &nbsp;·&nbsp; live</span>
+    <span>
+      <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
+    </span>
+  </div>
+
+  <!-- RAM hero -->
+  <div class="ram-card" id="ram-card">
+    <div class="ram-label"><span class="live-dot"></span> memory</div>
+    <div class="ram-free" id="ram-free">—</div>
+    <div class="ram-sub" id="ram-sub">loading…</div>
+    <div class="bar"><div class="fill" id="ram-fill" style="width:0%"></div></div>
+    <div class="ram-meta">
+      <span id="ram-used">—</span>
+      <span class="pressure" id="ram-pressure">—</span>
+    </div>
+
+    <!-- Meltdown panic button (hidden unless body.meltdown) -->
+    <div class="panic-wrap">
+      <button class="panic-btn" onclick="panicKill()">🚨 mercy kill everything 🚨</button>
+      <div class="meltdown-quote" id="meltdown-quote">i can't,,, everything hurts,,,</div>
+    </div>
+  </div>
+
+  <!-- Mini stats -->
+  <div class="mini-row">
+    <div class="mini">
+      <div class="k">disk free</div>
+      <div class="v" id="disk-free" style="color:var(--disk)">—</div>
+    </div>
+    <div class="mini">
+      <div class="k">cpu</div>
+      <div class="v" id="cpu-pct" style="color:var(--cpu)">—</div>
+    </div>
+    <div class="mini">
+      <div class="k">swap</div>
+      <div class="v" id="swap-used">—</div>
+    </div>
+  </div>
+
+  <!-- Settings drawer -->
+  <div class="settings" id="settings">
+    <div class="k">audio</div>
+    <div class="settings-row">
+      <span>Sound effects</span>
+      <div class="toggle" id="tg-sound" onclick="toggleFlag('sound_on')"></div>
+    </div>
+    <div class="settings-row">
+      <span>Voice commentary</span>
+      <div class="toggle" id="tg-voice" onclick="toggleFlag('voice_on')"></div>
+    </div>
+
+    <div class="k" style="margin-top:10px;">ai voice provider</div>
+    <div class="settings-row">
+      <span>Provider</span>
+      <select class="voice-select" id="provider-select" onchange="setProvider(this.value)">
+        <option value="auto">Auto (best available)</option>
+        <option value="openai">OpenAI (natural, paid)</option>
+        <option value="elevenlabs">ElevenLabs (character, free tier)</option>
+        <option value="macos">macOS built-in (ugly but free)</option>
+      </select>
+    </div>
+
+    <div style="font-size:10px; color:var(--text-dim); margin:8px 0 6px; line-height:1.4;">
+      Copy your API key anywhere, then click the button to paste it here.
+      (WKWebView popovers block keyboard paste, so we read the clipboard directly.)
+    </div>
+    <div class="settings-row" style="gap:6px;">
+      <span id="openai-status" style="flex:1; font-size:12px;">OpenAI: not set</span>
+      <button id="openai-remove" class="voice-select" onclick="removeKey('openai_key')" style="white-space:nowrap; display:none; color:var(--ram-hot); border-color:var(--ram-hot);">
+        🗑 remove
+      </button>
+      <button class="voice-select" onclick="pasteKey('openai_key')" style="white-space:nowrap;">
+        📋 paste OpenAI
+      </button>
+    </div>
+    <div class="settings-row" style="gap:6px;">
+      <span id="elevenlabs-status" style="flex:1; font-size:12px;">ElevenLabs: not set</span>
+      <button id="elevenlabs-remove" class="voice-select" onclick="removeKey('elevenlabs_key')" style="white-space:nowrap; display:none; color:var(--ram-hot); border-color:var(--ram-hot);">
+        🗑 remove
+      </button>
+      <button class="voice-select" onclick="pasteKey('elevenlabs_key')" style="white-space:nowrap;">
+        📋 paste ElevenLabs
+      </button>
+    </div>
+
+    <div class="k" style="margin-top:10px;">pick your character</div>
+    <div class="cast-grid" id="cast-grid">
+      <div class="cast-card" data-voice="fable"  onclick="setVoice('fable')">
+        <div class="cast-emoji">🎩</div>
+        <div class="cast-name">Dame Agatha</div>
+        <div class="cast-desc">British aristocrat</div>
+      </div>
+      <div class="cast-card" data-voice="nova"   onclick="setVoice('nova')">
+        <div class="cast-emoji">👩</div>
+        <div class="cast-name">Bestie</div>
+        <div class="cast-desc">Gen-Z toxic bestie</div>
+      </div>
+      <div class="cast-card" data-voice="coral"  onclick="setVoice('coral')">
+        <div class="cast-emoji">📣</div>
+        <div class="cast-name">Coach Coral</div>
+        <div class="cast-desc">delusional cheer</div>
+      </div>
+      <div class="cast-card" data-voice="echo"   onclick="setVoice('echo')">
+        <div class="cast-emoji">🍺</div>
+        <div class="cast-name">Uncle Ron</div>
+        <div class="cast-desc">drunk uncle, raspy</div>
+      </div>
+      <div class="cast-card" data-voice="onyx"   onclick="setVoice('onyx')">
+        <div class="cast-emoji">🍳</div>
+        <div class="cast-name">Chef Ramsay</div>
+        <div class="cast-desc">PROFANE chef</div>
+      </div>
+      <div class="cast-card" data-voice="alloy"  onclick="setVoice('alloy')">
+        <div class="cast-emoji">💼</div>
+        <div class="cast-name">Karen</div>
+        <div class="cast-desc">corporate HR</div>
+      </div>
+      <div class="cast-card" data-voice="ash"    onclick="setVoice('ash')">
+        <div class="cast-emoji">🦾</div>
+        <div class="cast-name">Chad</div>
+        <div class="cast-desc">tech-bro roaster</div>
+      </div>
+      <div class="cast-card" data-voice="verse"  onclick="setVoice('verse')">
+        <div class="cast-emoji">📢</div>
+        <div class="cast-name">Hype</div>
+        <div class="cast-desc">stadium announcer</div>
+      </div>
+      <div class="cast-card" data-voice="ballad" onclick="setVoice('ballad')">
+        <div class="cast-emoji">🗽</div>
+        <div class="cast-name">Mike from BK</div>
+        <div class="cast-desc">jaded New Yorker</div>
+      </div>
+    </div>
+    <div class="settings-row" style="gap:6px;">
+      <button class="voice-select" style="flex:1" onclick="testVoice()">Test current 🔊</button>
+      <button class="voice-select" style="flex:1; background:linear-gradient(180deg,#3a2d4e,#2a1d3e); color:var(--text);" onclick="audition()">🎭 Meet the cast</button>
+      <button class="voice-select" style="flex:0 0 auto; background:#2a1d1d; color:var(--ram-hot);" onclick="stopAudio()">⏹</button>
+    </div>
+    <div style="font-size:10px; color:var(--text-dim); margin-top:6px; line-height:1.4;">
+      OpenAI TTS costs ~$0.015 per 1K characters.
+      Typical quip ≈ 50 chars → under a penny each.
+      Voice lines are cached forever after first synthesis.
+    </div>
+  </div>
+
+  <!-- Process kill list -->
+  <div class="procs">
+    <div class="procs-header">
+      <span class="k">top memory hogs</span>
+      <span class="k" style="color:var(--text-dim)">click kill ↓</span>
+    </div>
+    <div class="proc-list" id="proc-list"></div>
+  </div>
+
+  <div class="actions">
+    <button onclick="openFull()">Full dashboard</button>
+    <button class="primary" onclick="openActivity()">Activity Monitor</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const MELTDOWN_QUOTES = [
+    "i can't,,, everything hurts,,,",
+    "why do you do this to me",
+    "chrome has 847 helpers. i counted.",
+    "help me daniel,,,",
+    "mom?? where's mom,,,",
+    "if you open one more vscode i swear",
+    "my therapist doesn't know i exist",
+    "i was supposed to be a macbook pro,,,",
+  ];
+
+  const fmtBytes = (n) => {
+    if (n == null) return "—";
+    const u = ["B","KB","MB","GB","TB"];
+    let i = 0, v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return (i >= 3 ? v.toFixed(1) : Math.round(v)) + " " + u[i];
+  };
+
+  const ramColor = (p) => {
+    const s = getComputedStyle(document.documentElement);
+    if (p >= 90) return s.getPropertyValue("--ram-hot").trim();
+    if (p >= 75) return s.getPropertyValue("--ram-warm").trim();
+    return s.getPropertyValue("--ram").trim();
+  };
+
+  let protectedSet = new Set();
+  let settings = {
+    tts_provider: "auto", default_voice: "fable",
+    sound_on: true, voice_on: true,
+    has_openai_key: false, has_elevenlabs_key: false,
+  };
+  let meltdownTickCount = 0;
+
+  async function tick() {
+    try {
+      const r = await fetch("/stats", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const s = await r.json();
+      protectedSet = new Set(s.protected || []);
+      if (s.settings) { settings = s.settings; syncSettingsUI(); }
+
+      document.getElementById("ram-free").textContent = fmtBytes(s.ram.available);
+      document.getElementById("ram-sub").textContent  = `free of ${fmtBytes(s.ram.total)}`;
+      document.getElementById("ram-used").textContent = `${fmtBytes(s.ram.used)} used`;
+      document.getElementById("ram-pressure").textContent = s.ram.pressure;
+
+      const pct = s.ram.percent;
+      const col = ramColor(pct);
+      const fill = document.getElementById("ram-fill");
+      fill.style.width = pct + "%";
+      fill.style.background = col;
+      fill.style.boxShadow = `0 0 12px ${col}99`;
+      document.getElementById("ram-card").style.setProperty("--accent", col);
+
+      // Meltdown mode
+      const meltdown = pct >= 95;
+      document.body.classList.toggle("meltdown", meltdown);
+      if (meltdown) {
+        meltdownTickCount++;
+        if (meltdownTickCount % 3 === 1) {
+          const q = MELTDOWN_QUOTES[Math.floor(Math.random() * MELTDOWN_QUOTES.length)];
+          document.getElementById("meltdown-quote").textContent = q;
+        }
+      }
+
+      document.getElementById("disk-free").textContent = fmtBytes(s.disk.free);
+      document.getElementById("cpu-pct").textContent   = s.cpu.percent.toFixed(0) + "%";
+      document.getElementById("swap-used").textContent = s.swap.used > 0 ? fmtBytes(s.swap.used) : "—";
+
+      renderProcs(s);
+    } catch (e) { /* server offline — do nothing */ }
+  }
+
+  function renderProcs(s) {
+    const list = s.top.slice(0, 8);
+    const el = document.getElementById("proc-list");
+    el.innerHTML = list.map(p => {
+      const pctOfRam = s.ram.total ? (p.rss / s.ram.total * 100) : 0;
+      const cls = pctOfRam >= 15 ? "hot" : (pctOfRam >= 5 ? "warn" : "");
+      const prot = protectedSet.has(p.name);
+      return `
+        <div class="proc">
+          <span class="name ${cls}" title="${esc(p.name)} · PID ${p.pid}">${esc(p.name)}</span>
+          <span class="rss">${fmtBytes(p.rss)}</span>
+          <button class="kill ${prot ? "protected" : ""}"
+                  ${prot ? "disabled" : ""}
+                  data-pid="${p.pid}" data-name="${esc(p.name)}">Kill</button>
+        </div>`;
+    }).join("");
+    el.querySelectorAll("button.kill").forEach(b => b.addEventListener("click", killOne));
+  }
+
+  async function killOne(e) {
+    const b = e.currentTarget;
+    const pid = b.dataset.pid, name = b.dataset.name;
+    b.disabled = true; b.textContent = "…";
+    try {
+      const r = await fetch(`/kill?pid=${pid}`, { method: "POST" });
+      const j = await r.json();
+      if (j.ok) toast(`🪙 RIP ${name}`, "win");
+      else { toast(`✗ ${j.error}`, "err"); b.disabled = false; b.textContent = "Kill"; }
+    } catch (err) {
+      toast("✗ " + err.message, "err");
+      b.disabled = false; b.textContent = "Kill";
+    }
+  }
+
+  async function panicKill() {
+    if (!confirm("Mercy-kill every non-protected app using >200 MB?\nYou will lose unsaved work in those apps.")) return;
+    toast("🚨 purging...", "err");
+    try {
+      const r = await fetch("/panic", { method: "POST" });
+      const j = await r.json();
+      if (j.ok) {
+        toast(`✨ purged ${j.killed.length} processes — relief incoming`, "win");
+      } else {
+        toast("✗ panic failed", "err");
+      }
+    } catch (e) { toast("✗ " + e.message, "err"); }
+  }
+
+  // ── Settings ───────────────────────────────────────────
+  function toggleSettings() {
+    document.getElementById("settings").classList.toggle("open");
+  }
+  function syncSettingsUI() {
+    document.getElementById("tg-sound").classList.toggle("on", settings.sound_on);
+    document.getElementById("tg-voice").classList.toggle("on", settings.voice_on);
+    document.getElementById("provider-select").value = settings.tts_provider;
+
+    // Highlight the active character card in the cast grid
+    document.querySelectorAll(".cast-card").forEach(card => {
+      card.classList.toggle("selected", card.dataset.voice === settings.default_voice);
+    });
+
+    // Status labels + show/hide the per-key remove buttons based on whether keys are saved.
+    const oi  = document.getElementById("openai-status");
+    const oiR = document.getElementById("openai-remove");
+    if (oi) {
+      oi.textContent = settings.has_openai_key ? "OpenAI: ✓ saved" : "OpenAI: not set";
+      oi.style.color = settings.has_openai_key ? "var(--cpu)" : "var(--text-dim)";
+    }
+    if (oiR) oiR.style.display = settings.has_openai_key ? "" : "none";
+
+    const el  = document.getElementById("elevenlabs-status");
+    const elR = document.getElementById("elevenlabs-remove");
+    if (el) {
+      el.textContent = settings.has_elevenlabs_key ? "ElevenLabs: ✓ saved" : "ElevenLabs: not set";
+      el.style.color = settings.has_elevenlabs_key ? "var(--cpu)" : "var(--text-dim)";
+    }
+    if (elR) elR.style.display = settings.has_elevenlabs_key ? "" : "none";
+  }
+  async function toggleFlag(key) {
+    settings[key] = !settings[key];
+    syncSettingsUI();
+    await postSettings({ [key]: settings[key] });
+  }
+  async function setVoice(v) {
+    settings.default_voice = v;
+    // Stop whatever character is mid-sentence so we don't get two voices overlapping.
+    await fetch("/stop_audio", { method: "POST" }).catch(() => {});
+    await postSettings({ default_voice: v });
+    // Preview the new character's signature line immediately — radio-station feel.
+    testVoice();
+  }
+  async function setProvider(p) {
+    settings.tts_provider = p;
+    await fetch("/stop_audio", { method: "POST" }).catch(() => {});
+    await postSettings({ tts_provider: p });
+    testVoice();
+  }
+  // Remove a saved API key. Confirms first so one accidental tap doesn't wipe it.
+  async function removeKey(field) {
+    const label = field.replace("_key", "");
+    if (!confirm(`Remove the ${label} API key?\n\nYou'll need to paste it again to use ${label} voices.`)) return;
+    const r = await postSettings({ [field]: "" });
+    if (r && r.ok) {
+      toast(`🗑 ${label} key removed`, "win");
+    } else {
+      toast(`✗ could not remove`, "err");
+    }
+  }
+
+  // Reads the system clipboard server-side via `pbpaste` — avoids the WKWebView
+  // paste-block issue entirely. User copies their key, clicks button, done.
+  async function pasteKey(field) {
+    try {
+      const r = await fetch(`/paste_key?field=${encodeURIComponent(field)}`, { method: "POST" });
+      const j = await r.json();
+      if (j.ok) {
+        toast(`✓ ${field.replace("_key","")} key saved (${j.preview})`, "win");
+        if (j.settings) { settings = j.settings; syncSettingsUI(); }
+      } else {
+        toast(`✗ ${j.error || "failed"}`, "err");
+      }
+    } catch (e) { toast("✗ " + e.message, "err"); }
+  }
+  // One personality-appropriate sample line per voice — so clicking "Test current voice"
+  // actually showcases the character instead of a generic hello.
+  // Signature line per character — plays when a voice is picked in the dropdown
+  // OR when Test is clicked. Only the 7 main cast members remain.
+  const CHARACTER_LINES = {
+    fable: "Hello. I am Dame Agatha. One does NOT simply kill processes without consulting me. You pedestrian swine.",
+    nova:  "Hey bestie! I'm Bestie. I say 'literally' like literally ten times a sentence. It's my toxic trait and I refuse to seek help. Fr.",
+    coral: "OH MY GOSH HI I'M COACH CORAL! Every process we kill is a W! It's a WIN for the JOURNEY! YOU are the MAIN CHARACTER! GO BABY GO!",
+    echo:  "Awwww hell. Name's Ron. Uncle Ron. Been at the bar since Tuesday. Last call was three days ago. Hell of a run. *hic* Damn.",
+    onyx:  "I am CHEF FUCKING RAMSAY and your memory management is ABSOLUTE SHIT! I'd rather eat a RAW donkey than touch this Mac, you COCK-WOMBLE!",
+    alloy: "Hi there. I'm Karen. Just circling back to flag that your memory usage is, frankly, concerning. Let's set up a quick sync to align.",
+    ash:   "Bro. I'm Chad. I murder your apps and roast you while I do it. Daniel, you have thirty four Chrome tabs and a Reddit thread about sleep schedules open right now. Fucking embarrassing.",
+    verse: "OH HE'S HERE FOLKS! The name's HYPE! I call every process kill like it's SportsCenter! OH THEY DEAD! THEY DEAD! THEY DEAAAAD! Let's get it!",
+    ballad: "Ay, my guy. Name's Mike. From Brooklyn. Been killin' processes since before it was cool. I close the apps, I make the coffee, I take the F train. You want somethin' done, you call me. You don't? Fine. I got nothin' but time, my guy."
+  };
+
+  let _speakingFadeTimer = null;
+  function markSpeaking() {
+    const card = document.querySelector(`.cast-card[data-voice="${settings.default_voice}"]`);
+    if (!card) return;
+    card.classList.add("speaking");
+    clearTimeout(_speakingFadeTimer);
+    // Rough estimate — fade the pulse after the line should be done.
+    _speakingFadeTimer = setTimeout(() => card.classList.remove("speaking"), 6000);
+  }
+
+  async function testVoice() {
+    const line = CHARACTER_LINES[settings.default_voice]
+              || `Hello, I am ${settings.default_voice}. Voice system is online.`;
+    fetch(`/say?text=${encodeURIComponent(line)}`, { method: "POST" });
+    markSpeaking();
+  }
+  async function audition() {
+    await fetch("/stop_audio", { method: "POST" }).catch(() => {});
+    toast("🎭 meet the cast — ~30 seconds", "win");
+    fetch("/audition", { method: "POST" });
+  }
+  async function stopAudio() {
+    await fetch("/stop_audio", { method: "POST" }).catch(() => {});
+    document.querySelectorAll(".cast-card.speaking").forEach(c => c.classList.remove("speaking"));
+    clearTimeout(_speakingFadeTimer);
+    toast("⏹ silenced — character shut up", "win");
+  }
+  async function postSettings(partial) {
+    try {
+      const r = await fetch("/settings", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(partial)
+      });
+      const j = await r.json();
+      if (j.settings) { settings = j.settings; syncSettingsUI(); }
+      return j;
+    } catch (e) { return null; }
+  }
+
+  function toast(msg, kind) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.remove("err", "win");
+    if (kind) t.classList.add(kind);
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function openFull()     { window.open("/", "_blank"); }
+  function openActivity() { fetch("/open_activity_monitor", { method: "POST" }).catch(() => {}); }
+
+  tick();
+  setInterval(tick, 2000);
+</script>
+</body>
+</html>

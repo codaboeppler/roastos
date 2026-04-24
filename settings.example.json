@@ -1,0 +1,10 @@
+{
+  "_comment": "Copy this file to settings.json (which is gitignored) and fill in your keys. You can also leave everything blank and configure via the widget's settings UI.",
+  "tts_provider": "auto",
+  "openai_key": "",
+  "elevenlabs_key": "",
+  "default_voice": "onyx",
+  "sound_on": true,
+  "voice_on": true,
+  "quiet_hours": false
+}
