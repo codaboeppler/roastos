@@ -1,10 +1,10 @@
 #!/bin/bash
 # Install the widget as a macOS LaunchAgent so it starts automatically on login.
-# Run this once. To uninstall later: launchctl unload ~/Library/LaunchAgents/com.danielboeppler.systemwidget.plist
+# Run this once. To uninstall later: launchctl unload ~/Library/LaunchAgents/com.danielboeppler.roastos.plist
 
 set -e
 
-LABEL="com.danielboeppler.systemwidget"
+LABEL="com.danielboeppler.roastos"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 WIDGET_DIR="$(cd "$(dirname "$0")" && pwd)"
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local server for the System Widget — AI voices + funnier quotes + panic kill.
+"""Local server for the RoastOS — AI voices + funnier quotes + panic kill.
 
 Endpoints (localhost-only):
     GET  /            → index.html / popover.html (static)
@@ -450,7 +450,7 @@ def main():
     warm_cache_on_boot()
     os.chdir(ROOT)
     with ReusingTCPServer(("127.0.0.1", PORT), Handler) as httpd:
-        print(f"◆ Widget server: http://127.0.0.1:{PORT}/")
+        print(f"🔥 RoastOS server: http://127.0.0.1:{PORT}/")
         print(f"  provider: {Settings.tts_provider}  ·  default voice: {Settings.default_voice}")
         print(f"  openai_key set: {bool(Settings.openai_key)}  ·  elevenlabs_key set: {bool(Settings.elevenlabs_key)}")
         try: httpd.serve_forever()

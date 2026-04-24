@@ -59,7 +59,7 @@ def kill_pid(pid, force=False):
 
 
 # ─── App ───────────────────────────────────────────────────────────────
-class SystemWidget(rumps.App):
+class RoastOS(rumps.App):
     def __init__(self):
         super().__init__("…", quit_button=None)
 
@@ -182,4 +182,4 @@ class SystemWidget(rumps.App):
 
 
 if __name__ == "__main__":
-    SystemWidget().run()
+    RoastOS().run()

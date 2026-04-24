@@ -1,4 +1,4 @@
-# 🫠 System Widget — your Mac has opinions
+# 🔥 RoastOS — like macOS, but it talks back
 
 A macOS menu-bar RAM / CPU / disk widget **with 9 AI-voiced characters** who
 roast you while you kill processes. Chef Ramsay yells profanity at Chrome.
@@ -60,8 +60,8 @@ Photoshop, etc.) plus ambient lines for RAM crossings. ~150 voice lines total.
 ### 1. Clone + enter
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/system-widget.git
-cd system-widget
+git clone https://github.com/codaboeppler/roastos.git
+cd roastos
 ```
 
 ### 2. Install dependencies
@@ -153,7 +153,7 @@ costs one API call. First-week active use typically consumes ~3-5K chars total.
 ## File tour
 
 ```
-system-widget/
+roastos/
 ├── menubar_popover.py   # native AppKit menu bar + WKWebView
 ├── server.py            # local HTTP server (stats, kill, panic, say)
 ├── personas.py          # 9 characters, ~150 quips, ambient lines
@@ -169,8 +169,8 @@ system-widget/
 ## Uninstall
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.danielboeppler.systemwidget.plist
-rm ~/Library/LaunchAgents/com.danielboeppler.systemwidget.plist
+launchctl unload ~/Library/LaunchAgents/com.danielboeppler.roastos.plist
+rm ~/Library/LaunchAgents/com.danielboeppler.roastos.plist
 ```
 
 ---

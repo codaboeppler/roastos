@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-click installer for the System Widget.
+# One-click installer for the RoastOS.
 # Does everything: installs deps, starts the menu bar app, starts the web server,
 # opens the dashboard, and sets up auto-start on login.
 
@@ -11,7 +11,7 @@ PY=/opt/homebrew/bin/python3.10
 
 echo ""
 echo "╭──────────────────────────────────────────╮"
-echo "│   ◆  System Widget — installer           │"
+echo "│   ◆  RoastOS — installer           │"
 echo "╰──────────────────────────────────────────╯"
 echo ""
 
@@ -31,20 +31,20 @@ echo ""
 echo "2/4  Stopping any previous instances…"
 pkill -f "menubar_popover.py"    2>/dev/null || true
 pkill -f "server.py"     2>/dev/null || true
-launchctl unload "$HOME/Library/LaunchAgents/com.danielboeppler.systemwidget.plist" 2>/dev/null || true
+launchctl unload "$HOME/Library/LaunchAgents/com.danielboeppler.roastos.plist" 2>/dev/null || true
 sleep 1
 echo "✓ clean"
 
 echo ""
 echo "3/4  Installing as a login item (menu bar will start automatically)…"
 mkdir -p "$HOME/Library/LaunchAgents"
-PLIST="$HOME/Library/LaunchAgents/com.danielboeppler.systemwidget.plist"
+PLIST="$HOME/Library/LaunchAgents/com.danielboeppler.roastos.plist"
 cat > "$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.danielboeppler.systemwidget</string>
+  <key>Label</key><string>com.danielboeppler.roastos</string>
   <key>ProgramArguments</key>
   <array>
     <string>$PY</string>
